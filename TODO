@@ -1,0 +1,7 @@
+control.py
+# remove duplicaton 부분 전부
+
+inquiry_kin.py
+
+N페이지 조회 가능하도록 하게
+url 뒤에 page=N 붙여쓰면 됨.

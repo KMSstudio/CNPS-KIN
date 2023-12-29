@@ -4,12 +4,14 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-#대한통운, 우체국택배, 
+#대한통운, 로젠, 우체국택배, 
 constant = {
     'cj': r"%EB%8C%80%ED%95%9C%ED%86%B5%EC%9A%B4",
+    'lg': r"%EB%A1%9C%EC%A0%A0",
+    'po': r"%EC%9A%B0%EC%B2%B4%EA%B5%AD%ED%83%9D%EB%B0%B0"
 }
 
-def inquiry_kin(company='cj', questionN=-1):
+def inquiry_kin(company='cj', pages=1):
     res = []
 
     kin_url = f"https://kin.naver.com/search/list.naver?query={constant[company]}&section=kin&sort=date"
@@ -20,10 +22,7 @@ def inquiry_kin(company='cj', questionN=-1):
         ques_rawlist = soup.select(r"#s_content > div.section > ul > li > dl > dt")
     else: return []
     
-    if questionN == -1 or questionN > len(ques_rawlist):
-        questionN = len(ques_rawlist)
-    for i in range(questionN):
-        ques = ques_rawlist[i]
+    for ques in ques_rawlist:
 
         #get url of question
         head = str(ques).find('href="')
@@ -43,7 +42,10 @@ def inquiry_kin(company='cj', questionN=-1):
             soup = BeautifulSoup(html, 'html.parser')
             ques_title = soup.select_one(r"#content > div.question-content > div > div.c-heading._questionContentsArea.c-heading--default-old > div.c-heading__title > div > div")
             ques_content = soup.select_one(r"#content > div.question-content > div > div.c-heading._questionContentsArea.c-heading--default-old > div.c-heading__content")
-            ques_text = ques_title.get_text().strip() + '  ' + ques_content.get_text().strip() if ques_content is not None else ques_title.get_text().strip()
+            try:
+                ques_text = ques_title.get_text().strip() + '  ' + ques_content.get_text().strip() if ques_content is not None else ques_title.get_text().strip()
+            except:
+                continue
         else:
             continue
 

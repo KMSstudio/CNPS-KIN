@@ -1,0 +1,13 @@
+inquiry_kin
+    지식인에 "대한통운"을 검색했을 태 뜨는 질문들의 첫 탭에 있는 질문들을 가져온다. (10개)
+    {'url': ques_url, 'd1id': ques_d1id, 'dirId': ques_dirId, 'docId': ques_docId,
+    'text': ques_text, 'number': ques_number, 'company': company}
+    로 구성된 딕셔너리의 리스트이다.
+    보개준 리스트들 중에는 유효하지 않은 질문이 있을 수 있다. (ex - 전화번호를 써봤는데 운송장번호로 오인한 경우)
+
+inquiry_cnps
+    숫자 하나와 배송사 ('cj' / 'po' / 'lg')를 받고 조회를 한다.
+    {'success': True, 'msg': message}로 구성되거니
+    {'success': False, 'msg': error message}로 구성된다.
+
+control
