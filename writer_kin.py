@@ -4,11 +4,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# make delay
 import time
-# copy answer
 import clipboard
-# detect key input
 import keyboard
 
 def wait_keyboard_enter():

@@ -1,8 +1,15 @@
-# url crawling
 import requests
 from bs4 import BeautifulSoup
-# for json values
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 import json
+import time
+import clipboard
+import keyboard
 
 def inquiry_cnps(number=583489878674, company='cj'):
     res = { 'success': False }
@@ -32,6 +39,31 @@ def inquiry_cnps(number=583489878674, company='cj'):
     
     res = {'success': True, 'msg': inq_msg}#, 'inq': inq}
     return res
+
+##################################################################################################image cnps
+def image_cnps(inq_list):
+    print('open writer...')
+    driver = webdriver.Chrome()
+    driver.get(url = 'https://www.google.com/')
+    driver.implicitly_wait(5)
+    main_window = driver.current_window_handle
+    # inquirying
+    for inq in inq_list:
+        # new tab load
+        inq_url = f"http://cnps.site/search?number={inq['number']}&company={inq['company']}"
+        driver.execute_script(f"window.open('{inq_url}');")
+        driver.implicitly_wait(5) #wait
+        driver.switch_to.window(driver.window_handles[-1])
+        # check is question valid & find answer button
+        # screenshot message
+        
+        # conponent.screenshot()
+        # driver.save_screenshot(r'./image/jjjjjjj')
+
+        # screenshat histogram
+    #closing
+    driver.quit()
+    return 1
 
 if __name__ == '__main__':
     print(inquiry_cnps()['msg'])
