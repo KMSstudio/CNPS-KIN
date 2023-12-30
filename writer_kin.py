@@ -1,34 +1,56 @@
-from selenium import webdriver
-
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-import time
 import clipboard
 import keyboard
 
-def wait_keyboard_enter():
-    while True: 
-        if keyboard.is_pressed('enter'): break
+from io import BytesIO
+import win32clipboard
+from PIL import Image
 
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+
+implicitly_wait_rate = 3
+
+#wait user press [key]] and release it
+def wait_keyboard(key):
+    while True: 
+        if keyboard.is_pressed(key): break
+    while True:
+        if not keyboard.is_pressed(key): break
+
+#https://all-share-source-code.tistory.com/42
+def image_to_clipboard(filepath):
+    #load image
+    image = Image.open(filepath)
+    output=BytesIO()
+    image.convert("RGB").save(output, "BMP")
+    data = output.getvalue()[14:]
+    output.close()
+    #send to clipboard
+    win32clipboard.OpenClipboard()
+    win32clipboard.EmptyClipboard()
+    win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+    win32clipboard.CloseClipboard()
+
+#ans list must be made up with dictionary that contain 'number', 'company', 'url', 'msg' as key
 def write_kin(ans_list):
+    global implicitly_wait_rate
     print('open writer...')
     driver = webdriver.Chrome()
     driver.get(url = 'https://www.naver.com/')
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(implicitly_wait_rate)
     main_window = driver.current_window_handle
     print('login browser and press Enter')
-    wait_keyboard_enter()
-    # answering
+    wait_keyboard('enter')
+    #answering
     for ans in ans_list:
         print('='*50)
-        # new tab load
+        #new tab load
         driver.execute_script(f"window.open('{ans['url']}');")
-        driver.implicitly_wait(5) #wait
+        driver.implicitly_wait(implicitly_wait_rate) #wait
         driver.switch_to.window(driver.window_handles[-1])
         print(f"open tab {ans['url']}") #$
-        # check is question valid & find answer button
+        #check is question valid & find answer button
         try:
             driver.find_element(by=By.CSS_SELECTOR, value=r'.adoptCheck')
             ans_valid = False
@@ -41,21 +63,32 @@ def write_kin(ans_list):
             driver.switch_to.window(main_window)
             continue
         print('question is valid') #$
-        # find answer button
+        #find answer button
         write_btn.click()
-        # copy message to clipboard and wait user action
+        #copy message to clipboard and wait user action
         clipboard.copy(ans['msg'])
-        print('write "Ctrl+V" and press Enter') #$
-        wait_keyboard_enter()
+        print('write "Ctrl+V" (msg) and press Enter') #$
+        wait_keyboard('enter')
+        #copy prediction image to clipboard and "
+        image_to_clipboard(f"./image/{ans['company']}_{ans['number']}_pred.png")
+        print('write "Ctrl+V" (pred) and press Enter') #$
+        wait_keyboard('enter')
+        #copy prediction image to clipboard and "
+        image_to_clipboard(f"./image/{ans['company']}_{ans['number']}_hist.png")
+        print('write "Ctrl+V" (hist) and press Enter') #$
+        wait_keyboard('enter')
         #submit
         submit_btn = driver.find_element(by=By.CSS_SELECTOR, value=r'#answerRegisterButton')
         submit_btn.click()
         print('submit the message') #$
+        #wait until answer submited
+        print('press enter when you confirm answer is submited')
+        wait_keyboard('enter')
         # close tab and bak to main window
         driver.close()
         driver.switch_to.window(main_window)
         print('wait for next question...') #$
-        time.sleep(1)
+        #time.sleep(1)
     #closing
     print('close writer...')
     driver.quit()

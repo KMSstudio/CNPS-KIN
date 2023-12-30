@@ -1,9 +1,6 @@
-control.py
-# remove duplicaton 부분 전부
+writer_kin.py
+함수 인자가 아닌 ./log/stage에 있는 파일을 기준으로 움직이도록 수정
+이후 stage에 있는 invoice들은 invoice.txt로 옮겨가고 이미지는 삭제됨.
 
-inquiry_cnps
-조회결과 이미지로도 만들 수 있게 하기.
-
-inquiry_kin.py
-N페이지 조회 가능하도록 하게
-url 뒤에 page=N 붙여쓰면 됨.
+inquiry_cnps.py
+작성한 내용 ./log/invoice가 아닌 ./log/stage에 있게 하도록 수정할 것.

@@ -11,30 +11,36 @@ constant = {
     'po': r"%EC%9A%B0%EC%B2%B4%EA%B5%AD%ED%83%9D%EB%B0%B0"
 }
 
-def inquiry_kin(company='cj', pages=1):
-    res = []
+def bn_src(list, data):
+    lft = 0; rht = len(list)-1; mid = (lft+rht)//2
+    while lft<=rht:
+        if data>list[mid]: lft=mid+1
+        elif data<list[mid]: rht=mid-1
+        else: return mid
+        mid=(lft+rht)//2
+    return -1
 
-    kin_url = f"https://kin.naver.com/search/list.naver?query={constant[company]}&section=kin&sort=date"
+def inquiry_kin(company='cj', page=0):
+    res = []
+    #get response of kin main src
+    kin_url = f"https://kin.naver.com/search/list.naver?query={constant[company]}&section=kin&sort=date" + ('' if not int(page) else f'&page={page}')
     response = requests.get(kin_url)
     if response.status_code == 200:
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         ques_rawlist = soup.select(r"#s_content > div.section > ul > li > dl > dt")
     else: return []
-    
     for ques in ques_rawlist:
-
         #get url of question
         head = str(ques).find('href="')
         tail = str(ques).find('"', head+6)
         ques_url = str(ques)[(head+6):tail]
         ques_url = ques_url.replace('&amp;', '&')
         ques_url = ques_url.replace('§', '&s')
-
-        ques_d1id =     ques_url[(ques_url.find('d1id=')+len('d1id=')):ques_url.find('&', ques_url.find('d1id='))]
-        ques_dirId =    ques_url[(ques_url.find('dirId=')+len('dirId=')):ques_url.find('&', ques_url.find('dirId='))]
-        ques_docId =    ques_url[(ques_url.find('docId=')+len('docId=')):ques_url.find('&', ques_url.find('docId='))]
-
+        #extract docIds (deleted)
+        #ques_d1id =     ques_url[(ques_url.find('d1id=')+len('d1id=')):ques_url.find('&', ques_url.find('d1id='))]
+        #ques_dirId =    ques_url[(ques_url.find('dirId=')+len('dirId=')):ques_url.find('&', ques_url.find('dirId='))]
+        #ques_docId =    ques_url[(ques_url.find('docId=')+len('docId=')):ques_url.find('&', ques_url.find('docId='))]
         #get content
         response = requests.get(ques_url)
         if response.status_code == 200:
@@ -42,23 +48,24 @@ def inquiry_kin(company='cj', pages=1):
             soup = BeautifulSoup(html, 'html.parser')
             ques_title = soup.select_one(r"#content > div.question-content > div > div.c-heading._questionContentsArea.c-heading--default-old > div.c-heading__title > div > div")
             ques_content = soup.select_one(r"#content > div.question-content > div > div.c-heading._questionContentsArea.c-heading--default-old > div.c-heading__content")
-            try:
-                ques_text = ques_title.get_text().strip() + '  ' + ques_content.get_text().strip() if ques_content is not None else ques_title.get_text().strip()
-            except:
-                continue
-        else:
-            continue
-
+            try: ques_text = ques_title.get_text().strip() + '  ' + ques_content.get_text().strip() if ques_content is not None else ques_title.get_text().strip()
+            except: continue
+        else: continue
         #get invoice
         ques_numbers = re.findall(r'\d+', ques_text)
-        ques_numbers = list(set(ques_numbers))          # remove duplication
-
+        #remove duplication
+        ques_numbers = list(set(ques_numbers))
+        #read record file
+        try:
+            f = open('./log/invoice.txt', 'r')
+            rec = f.read().split(';')
+            f.close()
+        except: rec = []
         for ques_number in ques_numbers:
-            if len(str(ques_number)) < 9:
-                continue
+            if len(str(ques_number)) < 9: continue
+            if bn_src(rec, f"{company}_{ques_number}")!=-1: continue
             res.append({
-                'url': ques_url, 'd1id': ques_d1id, 'dirId': ques_dirId, 'docId': ques_docId,
-                'text': ques_text, 'number': ques_number, 'company': company})
+                'url': ques_url, 'text': ques_text, 'number': ques_number, 'company': company})
     return res
 
 if __name__ == '__main__':

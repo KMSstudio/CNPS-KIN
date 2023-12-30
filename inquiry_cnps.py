@@ -1,69 +1,49 @@
-import requests
-from bs4 import BeautifulSoup
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
-import json
-import time
-import clipboard
-import keyboard
+implicitly_wait_rate = 3
 
-def inquiry_cnps(number=583489878674, company='cj'):
-    res = { 'success': False }
-
-    url = f"http://cnps.site/api/makesrc?number={number}&company={company}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        inq = json.loads(soup.text)
-    else: return res
-    
-    if inq['success'] == False:
-        res['msg'] = inq['msg']
-        return res
-    
-    inq_msg = f"안녕하십니까 통계기반배송도착시간 예측 서비스 개발자 {'강시우'}입니다.\n\
-질문자님의 택배가 {inq['target']['location']}에 있습니다. \n\
-{inq['target']['location']}에 {inq['target']['status']}된 택배들 중 \n\n\
-25%가 {inq['predict']['p25']}\n\
-50%가 {inq['predict']['p50']}\n\
-75%가 {inq['predict']['p75']}\n\
-95%가 {inq['predict']['p95']}\n\
-안으로 도착했습니다.\n\n\
-{inq['predict']['pred']['range']}선으로 추정한 도착예정시간은 {inq['predict']['pred']['value']}입니다.\n\
-더 자세한 정보는 아래 url에서 확인가능합니다.\n{url}"
-    
-    res = {'success': True, 'msg': inq_msg}#, 'inq': inq}
-    return res
-
-##################################################################################################image cnps
-def image_cnps(inq_list):
-    print('open writer...')
+# inq_list must be made up with dictionary that contain 'number', 'company', 'url' as key
+def inquiry_cnps(inq_list):
+    global implicitly_wait_rate
+    res = [] #resource
+    rec = [] #record
+    #make driver
     driver = webdriver.Chrome()
     driver.get(url = 'https://www.google.com/')
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(implicitly_wait_rate)
     main_window = driver.current_window_handle
-    # inquirying
+    #inquirying
     for inq in inq_list:
-        # new tab load
+        #new tab load
         inq_url = f"http://cnps.site/search?number={inq['number']}&company={inq['company']}"
         driver.execute_script(f"window.open('{inq_url}');")
-        driver.implicitly_wait(5) #wait
+        driver.implicitly_wait(implicitly_wait_rate)
         driver.switch_to.window(driver.window_handles[-1])
-        # check is question valid & find answer button
-        # screenshot message
-        
-        # conponent.screenshot()
-        # driver.save_screenshot(r'./image/jjjjjjj')
-
-        # screenshat histogram
-    #closing
+        #check is question valid & find image
+        try:
+            prediction = driver.find_element(by=By.CSS_SELECTOR, value=r'#statistical-prediction')
+            histogram = driver.find_element(by=By.CSS_SELECTOR, value=r'#histogram')
+        except:
+            driver.close()
+            driver.switch_to.window(main_window)
+            continue
+        #screenshot image
+        prediction.screenshot(f"./image/{inq['company']}_{inq['number']}_pred.png")
+        histogram.screenshot(f"./image/{inq['company']}_{inq['number']}_hist.png")
+        #make message
+        inq_msg = prediction.text.replace('배송도착시간 통계', '안녕하십니까 www.cnps.site 의 개발자 강시우입니다.')+f'\n{inq_url}에 방문해 더 상세한 내용을 확인할 수 있습니다.' 
+        res.append({'number': inq['number'], 'company': inq['company'], 'url': inq['url'], 'msg': inq_msg})
+        rec.append(f"{inq['company']}_{inq['number']}")
+        #close tab
+        driver.close()
+        driver.switch_to.window(main_window)
     driver.quit()
-    return 1
+    #record invoice number & company
+    with open('./log/invoice.txt', 'r') as f: rec.extend(f.read().split(';'))
+    rec.sort()
+    with open('./log/invoice.txt', 'w') as f: f.write(';'.join(rec))
+    return res
 
 if __name__ == '__main__':
-    print(inquiry_cnps()['msg'])
+    inquiry_cnps([{'number': 574677392484, 'company': 'cj', 'url': r'https://kin.naver.com/qna/detail.naver?d1id=8&dirId=81302&docId=461272618&qb=64yA7ZWc7Ya17Jq0&enc=utf8&section=kin&rank=1&search_sort=3&spq=0', 'docId': 461272618}])
